@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""YOLO26 + Depth Anything V2 relative-depth fusion (single-image prototype).
-
-The output is research-only. Scores are image-relative, not meters, and are
-not sufficient for collision avoidance or safe-crossing decisions.
-"""
 import argparse
 import gc
 import json

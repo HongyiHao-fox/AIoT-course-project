@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Qwen3-VL terminal chat for an existing local vLLM OpenAI-compatible server."""
 import base64
 import io
 import os

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Single-image, four-model assistive navigation research demo (not safety-critical navigation)."""
 import argparse
 import gc
 import json

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-"""Single-image research prototype: YOLO26 + Depth Anything V2 + Qwen3-VL."""
 import argparse
 import gc
 import json
