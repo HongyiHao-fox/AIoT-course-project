@@ -1,5 +1,28 @@
+# OS / editor
 .DS_Store
-__pycache__/
-.pytest_cache/
-runs/
 .vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+
+# Model weights and large assets (keep them out of git)
+Qwen3-VL-8B-Instruct/
+Depth-Anything-V2/
+*.pt
+*.pth
+*.safetensors
+*.onnx
+
+# Run outputs
+outputs/
+runs/
+*_output/

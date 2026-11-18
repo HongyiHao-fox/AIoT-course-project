@@ -1,0 +1,29 @@
+# blindnav configuration. Copy and edit, then pass with --config.
+# Relative paths are resolved against model_root.
+# The BLINDNAV_MODEL_ROOT environment variable overrides model_root.
+
+model_root: /root/autodl-tmp
+device: auto            # auto | cpu | cuda:0 | mps
+
+# Horizontal position of an object (fraction of image width)
+left_boundary: 0.4      # center_x < 0.4 -> "left"
+right_boundary: 0.6     # center_x > 0.6 -> "right"
+
+detector:
+  weights: yolo26s.pt   # downloaded automatically if not found in model_root
+  conf: 0.25
+  imgsz: 640
+
+depth:
+  repo_dir: Depth-Anything-V2   # needs checkpoints/depth_anything_v2_<encoder>.pth
+  encoder: vits                 # vits | vitb | vitl
+  roi_fraction: 0.5             # centered part of each box sampled for depth
+
+segmenter:
+  weights: yolo26n-sem.pt
+  imgsz: 1024
+
+vlm:
+  model_dir: Qwen3-VL-8B-Instruct
+  max_new_tokens: 320
+  max_objects: 25               # detections included in the prompt

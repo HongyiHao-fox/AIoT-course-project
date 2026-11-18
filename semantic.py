@@ -3,14 +3,12 @@ import cv2
 import numpy as np
 import os
 
-# ========= 配置 =========
 IMAGE = "/root/autodl-tmp/test.jpg"
 OUT = "/root/autodl-tmp/semantic_output"
 MODEL = "yolo26n-sem.pt"
 
 os.makedirs(OUT, exist_ok=True)
 
-# ========= 读取图片 =========
 image = cv2.imread(IMAGE)
 
 if image is None:
@@ -18,13 +16,11 @@ if image is None:
 
 height, width = image.shape[:2]
 
-# ========= 加载模型 =========
 print("[1/3] Loading YOLO26 Semantic...")
 model = YOLO(MODEL)
 
 print("Supported classes:", model.names)
 
-# ========= 语义分割 =========
 print("[2/3] Running segmentation...")
 
 result = model.predict(
@@ -39,7 +35,6 @@ if result.semantic_mask is None:
 
 class_map = result.semantic_mask.data.cpu().numpy()
 
-# ========= 查找人行道类别 =========
 sidewalk_ids = [
     int(idx)
     for idx, name in result.names.items()
@@ -53,7 +48,6 @@ if not sidewalk_ids:
 
 sidewalk_id = sidewalk_ids[0]
 
-# ========= 生成人行道掩码 =========
 mask = (class_map == sidewalk_id).astype(np.uint8) * 255
 
 mask = cv2.resize(
@@ -62,7 +56,6 @@ mask = cv2.resize(
     interpolation=cv2.INTER_NEAREST
 )
 
-# ========= 绿色可视化 =========
 overlay = image.copy()
 
 green = np.zeros_like(image)
@@ -74,7 +67,6 @@ overlay[mask > 0] = cv2.addWeighted(
     0
 )
 
-# ========= 保存结果 =========
 cv2.imwrite(f"{OUT}/sidewalk_mask.png", mask)
 cv2.imwrite(f"{OUT}/sidewalk_overlay.jpg", overlay)
 

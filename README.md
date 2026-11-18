@@ -1,69 +1,87 @@
-# AIoT Course Project — Wearable Navigation Aid for the Blind
+# blindnav — Wearable Navigation Aid for the Blind
 
-A wearable assistive device that helps blind and visually impaired people walk outdoors.
-A body-worn camera captures the street scene, and a vision pipeline:
+AIoT course project. A wearable assistive device that helps blind and visually impaired people walk
+outdoors. A body-worn camera sends frames to a GPU server, which:
 
-- **Avoids obstacles** — detects people, vehicles, poles, bikes, etc. and estimates which are closer
-- **Finds the walkable path** — segments sidewalk vs. road
-- **Reads signboards** — reads street signs and notices aloud (Chinese)
-- **Recognizes traffic lights** — locates traffic lights in view (signal-state recognition is in progress)
+- **Avoids obstacles**: detects people, vehicles, poles and bikes, and estimates which are nearer
+- **Finds the walkable path**: segments sidewalk vs. road
+- **Reads signboards**: describes the scene and reads signs aloud (Chinese)
+- **Recognizes traffic lights**: locates traffic lights in view (red/green state is in progress)
 
-> ⚠️ **Research prototype.** Depth is *relative* (no meters), segmentation shows appearance, not
-> verified safe passage, and the system must not be used alone to decide when to cross a street.
+> ⚠️ **Research prototype.** Depth is *relative* (not meters). Segmentation shows how a region looks,
+> not whether it is safe to walk on. This system must not be used alone to decide when to cross a street.
 
 ---
 
-## System pipeline
+## Pipeline
 
 ```
- Camera frame
+ Camera frame (BGR)
      │
-     ├─► [1] YOLO26 detection ───────────► obstacles, traffic lights (+ left/center/right)
-     ├─► [2] Depth Anything V2 (Small) ──► relative depth → which obstacles are nearer
-     ├─► [3] YOLO26 semantic seg ────────► sidewalk / road masks + left/center/right coverage
+     ├─► [1] ObjectDetector   YOLO26            ─► obstacles, traffic lights + left/center/right
+     ├─► [2] DepthEstimator   Depth Anything V2 ─► relative depth → which obstacles are nearer
+     ├─► [3] SceneSegmenter   YOLO26-sem        ─► sidewalk / road masks + coverage per third
      │
-     └─► [4] Qwen3-VL-8B-Instruct ◄────── image + structured results from [1]–[3]
+     └─► [4] SceneDescriber   Qwen3-VL-8B       ◄─ image + structured results of [1]–[3]
                     │
                     ▼
-        Short Chinese scene description: obstacles, path, signboard text, uncertain risks
+        AnalysisResult  →  JSON (server)  /  images + analysis.json (CLI)
 ```
 
-## Repository layout
+`Navigator` (in `pipeline.py`) runs these stages. Each model loads lazily the first time it's used.
+With `keep_loaded=True` (the server default), models stay in GPU memory between frames.
+With `keep_loaded=False` (the CLI default), each model is freed after its stage so the pipeline fits on smaller GPUs.
 
-| Path | Purpose |
-|---|---|
-| `fusion.py` | YOLO26 detection + Depth Anything V2 depth. Outputs each object's position and relative-depth score. |
-| `semantic.py` | YOLO26 semantic segmentation: extracts the **sidewalk** mask and a green overlay. |
-| `navigation.py` | 3-model pipeline: detection → depth → Qwen3-VL report. |
-| `navigation4.py` | **Main demo.** 4-model pipeline: detection → depth → semantic segmentation → Qwen3-VL report. |
-| `qwen3.py` | Terminal chat with Qwen3-VL through a running vLLM server; send street images with `/image`. |
-| `Server/app.py` | Flask backend for the wearable device to send frames to (skeleton, in progress). |
-| `Server/temp/` | Web front-end placeholder (HTML / CSS / JS). |
+## Project structure
 
-## Requirements
+```
+.
+├── configs/default.yaml        # model paths and thresholds
+├── src/blindnav/
+│   ├── cli.py                  # `blindnav` command (analyze / segment / chat / serve)
+│   ├── config.py               # Settings dataclasses + YAML/env loading
+│   ├── pipeline.py             # Navigator: runs all stages on one frame
+│   ├── schemas.py              # Detection, Segmentation, AnalysisResult
+│   ├── fusion.py               # depth-to-box fusion, zone coverage
+│   ├── prompts.py              # Qwen3-VL prompts (Chinese)
+│   ├── visualize.py            # debug drawings (boxes, depth colormap, mask overlay)
+│   ├── export.py               # save images + analysis.json
+│   ├── chat.py                 # terminal chat with Qwen3-VL via vLLM
+│   ├── models/                 # one wrapper per model (lazy loading)
+│   │   ├── detector.py         #   YOLO26 detection
+│   │   ├── depth.py            #   Depth Anything V2
+│   │   ├── segmenter.py        #   YOLO26 semantic segmentation
+│   │   └── vlm.py              #   Qwen3-VL (transformers)
+│   ├── server/                 # Flask API + web page for the wearable
+│   └── utils/                  # geometry, image I/O, device selection
+├── tests/                      # pytest suite (runs without GPU or model weights)
+├── pyproject.toml
+└── requirements.txt
+```
 
-- Linux GPU server (developed on AutoDL; ~20 GB VRAM recommended for Qwen3-VL-8B)
-- Python 3.10+
-- Packages:
+## Installation
+
+Use a Linux GPU server (developed on AutoDL; about 20 GB of VRAM is enough for Qwen3-VL-8B) with Python 3.10+.
 
 ```bash
-pip install torch torchvision ultralytics opencv-python numpy pillow \
-            transformers accelerate openai flask
-pip install vllm   # only needed for qwen3.py
+# 1. PyTorch matching your CUDA version: https://pytorch.org/get-started/locally/
+# 2. This project (editable install, with server, chat and dev extras)
+pip install -e ".[all]"
+# 3. Optional, only for `blindnav chat`
+pip install vllm
 ```
 
-### Model weights (not stored in this repo)
+### Model weights (not stored in git)
 
-The scripts expect this layout under `/root/autodl-tmp/` (change with command-line flags):
+Put the weights under one **model root** folder (default `/root/autodl-tmp`):
 
 ```
-/root/autodl-tmp/
-├── yolo26s.pt                         # YOLO26 detection
-├── yolo26n-sem.pt                     # YOLO26 semantic segmentation
-├── Depth-Anything-V2/                 # git clone of the Depth-Anything-V2 repo
+<model_root>/
+├── yolo26s.pt                     # downloaded automatically if missing
+├── yolo26n-sem.pt
+├── Depth-Anything-V2/             # git clone of the repo
 │   └── checkpoints/depth_anything_v2_vits.pth
-├── Qwen3-VL-8B-Instruct/              # Hugging Face model folder (contains config.json)
-└── test.jpg                           # sample street image
+└── Qwen3-VL-8B-Instruct/          # Hugging Face model folder (contains config.json)
 ```
 
 ```bash
@@ -72,44 +90,86 @@ git clone https://github.com/DepthAnything/Depth-Anything-V2
 huggingface-cli download Qwen/Qwen3-VL-8B-Instruct --local-dir Qwen3-VL-8B-Instruct
 ```
 
+To use a different folder, set `export BLINDNAV_MODEL_ROOT=/path`, pass `--model-root /path`,
+or copy `configs/default.yaml`, edit it and pass it with `--config`.
+
 ## Usage
 
-**Full 4-model demo**
-
 ```bash
-python navigation4.py --image /root/autodl-tmp/test1.jpg
-python navigation4.py --image test1.jpg --skip-qwen      # fast check without Qwen
+blindnav analyze street.jpg                    # all 4 models
+blindnav analyze street.jpg --no-vlm           # skip Qwen (fast check)
+blindnav analyze street.jpg --no-seg --no-vlm  # detection + depth only
+blindnav segment street.jpg                    # sidewalk / road masks only
+blindnav chat                                  # Qwen3-VL chat (needs `vllm serve` running)
+blindnav serve --port 6006                     # HTTP API for the wearable
 ```
 
-Output in `navigation4_output/`: `detected.jpg`, `depth.jpg`, `semantic_overlay.jpg`, `fusion.jpg`,
-`sidewalk_mask.png`, `road_mask.png`, `analysis.json`, `report.txt`.
+`blindnav analyze` writes these files to `outputs/<image name>/`:
 
-**Individual stages**
+| File | Content |
+|---|---|
+| `detected.jpg` | detection boxes |
+| `depth.jpg`, `depth.npy` | relative depth (colormap / raw) |
+| `sidewalk_mask.png`, `road_mask.png`, `semantic_overlay.jpg` | segmentation |
+| `fusion.jpg` | boxes + relative closeness on the segmentation overlay |
+| `analysis.json` | all structured results |
+| `report.txt` | Qwen3-VL scene description |
 
-```bash
-python fusion.py --image test.jpg            # detection + depth → fusion_output/
-python semantic.py                           # sidewalk mask → semantic_output/ (paths set in file)
-python navigation.py --image test.jpg        # detection + depth + Qwen → navigation_output/
+### Using it from Python
+
+```python
+from blindnav import Navigator, load_settings
+from blindnav.utils.image import load_image
+
+nav = Navigator(load_settings("configs/default.yaml"), vlm=True)
+result = nav.analyze(load_image("street.jpg"))
+print(result.to_dict())
 ```
 
-**Interactive Qwen3-VL chat**
+### HTTP API
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/health` | server status |
+| POST | `/api/analyze` | fast models only, returns `AnalysisResult` JSON |
+| POST | `/api/describe` | same plus a Qwen3-VL description (slow, call it on demand) |
+
+Send the image either as multipart field `image` or as the raw JPEG body:
 
 ```bash
-# terminal 1
-vllm serve /root/autodl-tmp/Qwen3-VL-8B-Instruct --port 8000
-# terminal 2
-python qwen3.py
-你> /image /root/autodl-tmp/test.jpg
+curl -F image=@street.jpg http://127.0.0.1:6006/api/analyze
 ```
 
-Environment variables: `VLM_BASE_URL` (default `http://127.0.0.1:8000/v1`), `VLM_MODEL`,
-`VLM_API_KEY`, `VLM_MAX_TOKENS`, `VLM_MAX_TURNS`.
+On AutoDL, use the custom service (自定义服务) feature on port 6006 to get a public HTTPS URL.
 
-**Web server**
+### Interactive chat settings
+
+`blindnav chat` reads these environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `VLM_BASE_URL` | `http://127.0.0.1:8000/v1` | vLLM server address |
+| `VLM_MODEL` | first model the server lists | model name |
+| `VLM_API_KEY` | `EMPTY` | API key |
+| `VLM_MAX_TOKENS` | `512` | longest reply |
+| `VLM_MAX_TURNS` | `6` | how many past turns to keep |
+
+## Development
 
 ```bash
-cd Server && python app.py     # http://127.0.0.1:5000/api
+pytest          # tests use fake models: no GPU or weights needed
+ruff check src tests
 ```
+
+### Migrating from the old scripts
+
+| Old script | New command |
+|---|---|
+| `navigation4.py --image x` | `blindnav analyze x` |
+| `navigation.py --image x` | `blindnav analyze x --no-seg` |
+| `fusion.py --image x` | `blindnav analyze x --no-seg --no-vlm` |
+| `semantic.py` | `blindnav segment x` |
+| `qwen3.py` | `blindnav chat` |
 
 ## Roadmap
 
@@ -117,12 +177,10 @@ cd Server && python app.py     # http://127.0.0.1:5000/api
 - [x] Relative depth fusion
 - [x] Sidewalk / road segmentation
 - [x] Qwen3-VL scene description and signboard reading
+- [x] Unified `Navigator` pipeline, CLI, config file, tests
+- [x] HTTP API (`/api/analyze`, `/api/describe`)
 - [ ] Traffic-light **state** (red / green) classification
-- [ ] `/analyze` API in `Server/` that runs the pipeline on uploaded frames
-- [ ] Real-time camera loop (fast models every frame, Qwen on demand)
-- [ ] Voice output (TTS) and vibration feedback on the wearable
-- [ ] Hardware distance sensor (ultrasonic / ToF) for metric obstacle distance
-
-## Team
-
-AIoT course project.
+- [ ] Alert rules: turn results into one short spoken sentence
+- [ ] Phone web app: camera → API → speech (wearable prototype)
+- [ ] Evaluation on our own street photos (accuracy, latency)
+- [ ] Hardware distance sensor (ultrasonic / ToF) for obstacle distance in meters
