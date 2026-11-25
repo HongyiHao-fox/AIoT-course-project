@@ -1,0 +1,91 @@
+{
+  "status": "ok",
+  "asr": {
+    "text": "Take me to the Butler Library",
+    "language": "en",
+    "language_prob": 0.977,
+    "audio_duration_s": 4.57,
+    "source": "audio",
+    "audio_file": "/Users/hongyihao/Desktop/Projects/AIoT-course-project/src/voice_recognized/test.m4a",
+    "device": "mps"
+  },
+  "query": "Butler Library",
+  "origin": {
+    "lat": 40.8075,
+    "lng": -73.9626
+  },
+  "destination": {
+    "name": "Butler Library",
+    "address": "535 W 114th St, New York, NY 10027, USA",
+    "place_id": "ChIJVRPaMTz2wokRm4LsaYrbHfE",
+    "lat": 40.80636260000001,
+    "lng": -73.9631912
+  },
+  "route": {
+    "distance_m": 242,
+    "duration": "191s",
+    "steps": [
+      {
+        "step": 1,
+        "maneuver": "DEPART",
+        "instruction": "Head northwest",
+        "notes": [
+          "Restricted usage road"
+        ],
+        "distance_m": 29,
+        "duration": "22s",
+        "start": {
+          "latitude": 40.8074808,
+          "longitude": -73.9626138
+        },
+        "end": {
+          "latitude": 40.807606,
+          "longitude": -73.9629179
+        }
+      },
+      {
+        "step": 2,
+        "maneuver": "TURN_LEFT",
+        "instruction": "Turn left toward W 114th St",
+        "notes": [
+          "Restricted usage road",
+          "Take the stairs"
+        ],
+        "distance_m": 166,
+        "duration": "132s",
+        "start": {
+          "latitude": 40.807606,
+          "longitude": -73.9629179
+        },
+        "end": {
+          "latitude": 40.8063698,
+          "longitude": -73.963832
+        }
+      },
+      {
+        "step": 3,
+        "maneuver": "TURN_LEFT",
+        "instruction": "Turn left onto W 114th St",
+        "notes": [
+          "Destination will be on the left"
+        ],
+        "distance_m": 48,
+        "duration": "37s",
+        "start": {
+          "latitude": 40.8063698,
+          "longitude": -73.963832
+        },
+        "end": {
+          "latitude": 40.8061626,
+          "longitude": -73.96333709999999
+        }
+      }
+    ]
+  },
+  "timing": {
+    "model_load_s": 0.83,
+    "asr_s": 1.16,
+    "places_s": 0.48,
+    "routes_s": 0.13
+  }
+}

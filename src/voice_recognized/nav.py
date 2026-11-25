@@ -1,14 +1,3 @@
-"""
-语音导航 demo：语音 -> 文字 -> 目的地 -> Places 坐标 -> Routes 步行路线 -> JSON
-
-放在 src/nav.py，在项目根目录运行：
-    python src/nav.py                                   # 默认识别 src/voice_recognized/test.m4a
-    python src/nav.py path/to/audio.m4a
-    python src/nav.py --text "Take me to Butler Library"  # 跳过语音，直接测地图部分
-    python src/nav.py -o output.json                    # 同时保存成文件
-
-需要环境变量 GOOGLE_MAPS_API_KEY
-"""
 import argparse
 import json
 import os
