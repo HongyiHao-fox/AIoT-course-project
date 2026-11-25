@@ -21,7 +21,6 @@ MODEL_NAME = "large-v3-turbo"
 
 
 def load_model(device="auto"):
-    """优先用 MPS（Apple GPU），失败则退回 CPU int8。"""
     if device in ("auto", "mps"):
         try:
             return WhisperModel(MODEL_NAME, device="mps", compute_type="float16"), "mps"
