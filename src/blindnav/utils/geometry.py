@@ -1,4 +1,3 @@
-"""Bounding-box helpers."""
 from __future__ import annotations
 
 from collections.abc import Sequence

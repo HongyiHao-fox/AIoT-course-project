@@ -1,4 +1,3 @@
-"""Qwen3-VL scene description and signboard reading (local transformers)."""
 from __future__ import annotations
 
 from pathlib import Path

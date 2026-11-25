@@ -1,4 +1,3 @@
-"""Depth Anything V2 relative (not metric) depth estimation."""
 from __future__ import annotations
 
 import sys

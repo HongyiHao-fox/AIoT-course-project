@@ -1,7 +1,3 @@
-# blindnav configuration. Copy and edit, then pass with --config.
-# Relative paths are resolved against model_root.
-# The BLINDNAV_MODEL_ROOT environment variable overrides model_root.
-
 model_root: /root/autodl-tmp
 device: auto            # auto | cpu | cuda:0 | mps
 

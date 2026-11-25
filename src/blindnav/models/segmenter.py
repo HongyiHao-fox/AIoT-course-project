@@ -1,4 +1,3 @@
-"""YOLO26 semantic segmentation: sidewalk / road layout."""
 from __future__ import annotations
 
 import cv2

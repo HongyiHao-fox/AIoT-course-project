@@ -1,4 +1,3 @@
-"""Device selection and GPU memory helpers. torch is imported lazily."""
 from __future__ import annotations
 
 import gc

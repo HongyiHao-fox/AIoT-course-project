@@ -1,4 +1,3 @@
-"""YOLO26 object detection: obstacles, people, vehicles, traffic lights."""
 from __future__ import annotations
 
 import numpy as np
